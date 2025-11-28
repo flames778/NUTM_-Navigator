@@ -1,0 +1,3181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUTM Navigator Pro — Premium Campus AI</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.9);
+            --primary: #8b5cf6;
+            --accent: #06d6a0;
+            --secondary: #f59e0b;
+            --muted: #94a3b8;
+            --text: #f1f5f9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --gradient: linear-gradient(135deg, #8b5cf6, #f59e0b, #06d6a0);
+            --card-gradient: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(44, 58, 82, 0.9));
+            --glass: rgba(255, 255, 255, 0.1);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            --glow: 0 0 30px rgba(139, 92, 246, 0.4);
+            --blur: blur(12px);
+        }
+
+        /* Light Mode Variables */
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --card: rgba(255, 255, 255, 0.95);
+            --primary: #7c3aed;
+            --accent: #059669;
+            --secondary: #d97706;
+            --muted: #64748b;
+            --text: #1e293b;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --gradient: linear-gradient(135deg, #7c3aed, #d97706, #059669);
+            --card-gradient: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+            --glass: rgba(0, 0, 0, 0.05);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --glow: 0 0 30px rgba(124, 58, 237, 0.2);
+            --blur: blur(12px);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        [data-theme="light"] ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        /* Premium Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .pulse-logo {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+            box-shadow: var(--glow);
+        }
+        
+        .pulse-logo i {
+            font-size: 2rem;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 30px;
+            background: var(--card);
+            box-shadow: var(--shadow);
+            border-bottom: 1px solid var(--glass);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: var(--blur);
+            transition: all 0.3s ease;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 800;
+            font-size: 1.6rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            position: relative;
+        }
+        
+        .pro-badge {
+            position: absolute;
+            top: -8px;
+            right: -45px;
+            background: var(--gradient);
+            color: white;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--text);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .nav-tab.active {
+            background: var(--gradient);
+            box-shadow: var(--glow);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: var(--shadow);
+        }
+        
+        .user-badge {
+            background: var(--glass);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            backdrop-filter: var(--blur);
+        }
+
+        /* Theme Toggle Switch */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .theme-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--glass);
+            border: 1px solid var(--primary);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 3px;
+            background: var(--primary);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+            background: white;
+        }
+
+        .slider .sun-icon, .slider .moon-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            color: var(--text);
+            transition: opacity 0.3s;
+        }
+
+        .slider .sun-icon {
+            left: 8px;
+            opacity: 0;
+        }
+
+        .slider .moon-icon {
+            right: 8px;
+            opacity: 1;
+        }
+
+        input:checked + .slider .sun-icon {
+            opacity: 1;
+        }
+
+        input:checked + .slider .moon-icon {
+            opacity: 0;
+        }
+
+        [data-theme="light"] .slider .sun-icon {
+            opacity: 1;
+        }
+
+        [data-theme="light"] .slider .moon-icon {
+            opacity: 0;
+        }
+
+        [data-theme="light"] input:checked + .slider .sun-icon {
+            opacity: 0;
+        }
+
+        [data-theme="light"] input:checked + .slider .moon-icon {
+            opacity: 1;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 25px;
+        }
+        
+        .card {
+            background: var(--card-gradient);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass);
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: var(--blur);
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow), var(--glow);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--glass);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            backdrop-filter: var(--blur);
+        }
+        
+        .tab-btn.active {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            box-shadow: var(--glow);
+        }
+        
+        .tab {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .tab.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s;
+            backdrop-filter: var(--blur);
+        }
+
+        [data-theme="light"] input,
+        [data-theme="light"] select,
+        [data-theme="light"] textarea {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .btn {
+            background: var(--gradient);
+            color: white;
+            padding: 16px 28px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: var(--blur);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow), var(--glow);
+        }
+        
+        .btn.small {
+            padding: 12px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .app-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .left-col, .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .search-box input {
+            margin-bottom: 0;
+        }
+        
+        .quick-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .quick-item {
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--glass);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            background: var(--card);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: var(--blur);
+        }
+        
+        .quick-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .quick-item:hover::before {
+            opacity: 0.1;
+        }
+        
+        .quick-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+        
+        .category-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--glass);
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .chat-card .chatBox {
+            height: 400px;
+            overflow: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--glass);
+            backdrop-filter: var(--blur);
+        }
+
+        [data-theme="light"] .chat-card .chatBox {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .map-container {
+            height: 450px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--glass);
+            position: relative;
+        }
+        
+        #liveMap {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+        
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            backdrop-filter: var(--blur);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .msg {
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: var(--blur);
+        }
+        
+        .msg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gradient);
+            opacity: 0.6;
+        }
+        
+        .msg.bot {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            align-self: flex-start;
+        }
+        
+        .msg.user {
+            background: rgba(6, 214, 160, 0.1);
+            border: 1px solid rgba(6, 214, 160, 0.3);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        [data-theme="light"] .msg.bot {
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+
+        [data-theme="light"] .msg.user {
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card);
+            padding: 16px 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent);
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: var(--blur);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-icon {
+            font-size: 1.2rem;
+        }
+
+        /* New styles for enhanced UI */
+        .location-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            backdrop-filter: var(--blur);
+        }
+
+        [data-theme="light"] .location-details {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        
+        .route-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .route-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .admin-panel {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass);
+        }
+        
+        .admin-panel h3 {
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+        
+        .admin-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: var(--blur);
+        }
+
+        [data-theme="light"] .stat-card {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+        
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .suggestion-tag {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: var(--blur);
+        }
+
+        [data-theme="light"] .suggestion-tag {
+            background: rgba(124, 58, 237, 0.1);
+        }
+        
+        .suggestion-tag:hover {
+            background: rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: var(--shadow), var(--glow);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+            backdrop-filter: var(--blur);
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+        }
+        
+        .feature-highlight {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-highlight::after {
+            content: 'NEW';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent);
+            color: var(--bg);
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        /* Community Feed Styles */
+        .community-feed {
+            display: none;
+        }
+        
+        .feed-container {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .feed-item {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--glass);
+            transition: all 0.3s;
+            backdrop-filter: var(--blur);
+        }
+        
+        .feed-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        
+        .feed-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .feed-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .feed-user-info {
+            flex: 1;
+        }
+        
+        .feed-user-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .feed-time {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        
+        .feed-content {
+            margin-bottom: 15px;
+        }
+        
+        .feed-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .feed-action {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        
+        .feed-action:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        [data-theme="light"] .feed-action:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .feed-action.liked {
+            color: var(--danger);
+        }
+        
+        .post-form {
+            margin-bottom: 25px;
+        }
+        
+        .post-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .post-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .post-option {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .post-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        [data-theme="light"] .post-option:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .feed-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: transparent;
+            border: 1px solid var(--glass);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+        }
+
+        /* AI Search Results */
+        .ai-results {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+        }
+
+        [data-theme="light"] .ai-results {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .ai-result-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        [data-theme="light"] .ai-result-item {
+            background: rgba(0, 0, 0, 0.03);
+        }
+        
+        .ai-result-item:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-left-color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .ai-result-item.selected {
+            background: rgba(139, 92, 246, 0.2);
+            border-left-color: var(--primary);
+        }
+        
+        .ai-result-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .ai-result-details {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        
+        .search-status {
+            padding: 10px;
+            text-align: center;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        /* Password Reset Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow);
+            transform: translateY(30px);
+            transition: transform 0.3s;
+            backdrop-filter: var(--blur);
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: var(--text);
+        }
+        
+        .password-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .forgot-password a {
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .forgot-password a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        /* Anonymous Login Section */
+        .anonymous-login {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--glass);
+        }
+        
+        .anonymous-login p {
+            margin-bottom: 15px;
+            color: var(--muted);
+        }
+
+        /* Admin Login Helper */
+        .admin-helper {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        [data-theme="light"] .admin-helper {
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+        
+        .admin-helper h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .admin-helper p {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 968px) {
+            .app-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .map-container {
+                height: 350px;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .admin-controls {
+                flex-direction: column;
+            }
+            
+            .fab {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .nav-tabs {
+                display: none;
+            }
+            
+            .mobile-menu {
+                display: block;
+            }
+
+            .theme-toggle {
+                margin-left: 10px;
+            }
+
+            .theme-label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Premium Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="pulse-logo">
+            <i class="fas fa-map-marked-alt"></i>
+        </div>
+        <div class="loading-text">NUTM Navigator</div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div class="modal-overlay" id="passwordResetModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Reset Password</h3>
+                <button class="modal-close" id="closePasswordModal">&times;</button>
+            </div>
+            <form id="passwordResetForm">
+                <div class="form-group">
+                    <label class="form-label" for="resetEmail">Email Address</label>
+                    input type="email" id="resetEmail" required placeholder="your.email@nutm.edu.ng" />
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="changePasswordModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock"></i> Change Password</h3>
+                <button class="modal-close" id="closeChangePasswordModal">&times;</button>
+            </div>
+            <form id="changePasswordForm">
+                <div class="form-group">
+                    <label class="form-label" for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" required placeholder="Enter current password" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" required placeholder="Enter new password" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" required placeholder="Confirm new password" />
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-sync-alt"></i> Change Password</button>
+            </form>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="brand">
+            <i class="fas fa-map-marked-alt"></i>
+            NUTM Navigator
+            <span class="pro-badge">PRO</span>
+        </div>
+        
+        <div class="nav-tabs" id="navTabs" style="display: none;">
+            <button class="nav-tab active" data-tab="navigationTab">Navigation</button>
+            <button class="nav-tab" data-tab="communityTab">Community</button>
+            <button class="nav-tab" data-tab="eventsTab">Events</button>
+        </div>
+        
+        <div class="user-area" id="userArea"></div>
+        
+        <!-- Theme Toggle Switch -->
+        <div class="theme-toggle">
+            <span class="theme-label">Dark</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider">
+                    <i class="fas fa-sun sun-icon"></i>
+                    <i class="fas fa-moon moon-icon"></i>
+                </span>
+            </label>
+            <span class="theme-label">Light</span>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Authentication Panel -->
+        <section id="authPanel" class="card active">
+            <h2>Welcome to NUTM Navigator Pro</h2>
+            <p class="muted">Premium Campus Navigation & Social AI Experience</p>
+            
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="loginTab">Student Login</button>
+                <button class="tab-btn" data-tab="registerTab">Create Account</button>
+            </div>
+
+            <div id="loginTab" class="tab active">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label" for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" required placeholder="your.email@nutm.edu.ng" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required placeholder="Enter your password" />
+                    </div>
+                    <button type="submit" class="btn"><i class="fas fa-sign-in-alt"></i> Access Campus AI</button>
+                </form>
+                <div class="forgot-password">
+                    <a id="forgotPasswordLink">Forgot your password?</a>
+                </div>
+                
+                <!-- Admin Login Helper -->
+                <div class="admin-helper">
+                    <h4><i class="fas fa-crown"></i> Admin Access</h4>
+                    <p><strong>Email:</strong> admin@nutm.edu.ng</p>
+                    <p><strong>Password:</strong> admin123456</p>
+                    <p><small>Use these credentials to login as administrator</small></p>
+                </div>
+                
+                <!-- Anonymous Login Section -->
+                <div class="anonymous-login">
+                    <p>Or continue as guest to explore basic features</p>
+                    <button id="anonymousLoginBtn" class="btn small"><i class="fas fa-user-secret"></i> Continue as Guest</button>
+                </div>
+            </div>
+
+            <div id="registerTab" class="tab">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label class="form-label" for="regName">Full Name</label>
+                        <input type="text" id="regName" required placeholder="Enter your full name" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="regEmail">Email Address</label>
+                        <input type="email" id="regEmail" required placeholder="your.email@nutm.edu.ng" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="regDept">Department</label>
+                        <select id="regDept" required>
+                            <option value="">Select your department</option>
+                            <option value="Cyber Security">Cyber Security</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Information Technology">Information Technology</option>
+                            <option value="Data Science">Data Science</option>
+                            <option value="Software Engineering">Software Engineering</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="regPassword">Password</label>
+                        <input type="password" id="regPassword" required placeholder="Create a secure password" />
+                    </div>
+                    <button type="submit" class="btn"><i class="fas fa-user-plus"></i> Create Student Account</button>
+                </form>
+                
+                <!-- Anonymous Login Section for Register Tab -->
+                <div class="anonymous-login">
+                    <p>Want to explore first? Continue as guest</p>
+                    <button id="anonymousLoginBtn2" class="btn small"><i class="fas fa-user-secret"></i> Continue as Guest</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Application Panel -->
+        <section id="appPanel" class="card" style="display:none;">
+            <!-- Navigation Tab -->
+            <div id="navigationTab" class="app-tab active">
+                <div class="app-grid">
+                    <div class="left-col">
+                        <div class="search-box">
+                            <input id="destinationSearch" placeholder="🔍 Ask AI for locations or search directly..." list="locationSuggestions" />
+                            <datalist id="locationSuggestions"></datalist>
+                            <button id="searchBtn" class="btn"><i class="fas fa-search"></i> Find Route</button>
+                        </div>
+
+                        <div class="suggestions" id="suggestions">
+                            <div class="suggestion-tag">🏥 Medical</div>
+                            <div class="suggestion-tag">🏨 Accommodation</div>
+                            <div class="suggestion-tag">🛍️ Shopping</div>
+                            <div class="suggestion-tag">🍽️ Food & Drinks</div>
+                            <div class="suggestion-tag">🎉 Entertainment</div>
+                        </div>
+
+                        <!-- AI Search Results -->
+                        <div id="aiResults" class="ai-results" style="display: none;">
+                            <div class="search-status">Ask the AI assistant for location recommendations</div>
+                        </div>
+
+                        <!-- Quick Access - Only 5 closest locations -->
+                        <div class="card">
+                            <h3>🚀 Quick Access Locations</h3>
+                            <p class="muted">Most popular spots near campus</p>
+                            <div class="quick-list" id="quickList">
+                                <!-- Will be populated with 5 closest locations -->
+                            </div>
+                        </div>
+
+                        <div class="results card" id="results" style="display:none;">
+                            <h3 id="routeTitle">Live Route Navigation</h3>
+                            <div id="routeSteps"></div>
+                        </div>
+
+                        <div class="chat-card card">
+                            <h3>🤖 NUTM AI Assistant</h3>
+                            <div id="chatBox" class="chatBox"></div>
+                            <div class="search-box">
+                                <input id="chatInput" placeholder="💬 Ask me about locations, food, events..." />
+                                <button id="sendChat" class="btn"><i class="fas fa-paper-plane"></i> Send</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Panel (visible only to admins) -->
+                        <div id="adminPanel" class="admin-panel" style="display:none;">
+                            <h3><i class="fas fa-cog"></i> Admin Controls</h3>
+                            <div class="admin-controls">
+                                <button id="exportData" class="btn small"><i class="fas fa-download"></i> Export User Data</button>
+                                <button id="addLocation" class="btn small success"><i class="fas fa-plus"></i> Add New Location</button>
+                                <button id="viewStats" class="btn small"><i class="fas fa-chart-bar"></i> View Analytics</button>
+                            </div>
+                            <div class="stats-grid" id="statsGrid" style="display:none;">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="totalUsers">0</div>
+                                    <div class="stat-label">Total Users</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="activeToday">0</div>
+                                    <div class="stat-label">Active Today</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="locationsCount">0</div>
+                                    <div class="stat-label">Locations</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="right-col">
+                        <div class="card">
+                            <h3>📍 Live Campus Map</h3>
+                            <div class="map-container">
+                                <div id="liveMap"></div>
+                                <div class="map-controls">
+                                    <button id="satelliteView" class="btn small"><i class="fas fa-satellite"></i> Satellite</button>
+                                    <button id="resetView" class="btn small"><i class="fas fa-home"></i> Reset</button>
+                                    <button id="locateMe" class="btn small"><i class="fas fa-location-arrow"></i> Locate Me</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3>📋 Location Details</h3>
+                            <div id="locationDetails" class="location-details">
+                                <p>Select a location to see details</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Password Management for logged-in users -->
+                        <div class="card">
+                            <h3><i class="fas fa-user-shield"></i> Account Security</h3>
+                            <p class="muted">Manage your password and account security</p>
+                            <div class="password-actions">
+                                <button id="changePasswordBtn" class="btn small"><i class="fas fa-lock"></i> Change Password</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Community Feed Tab -->
+            <div id="communityTab" class="app-tab">
+                <div class="card">
+                    <h2><i class="fas fa-users"></i> Campus Community Feed</h2>
+                    <p class="muted">Connect with fellow students, share updates, and stay informed</p>
+                    
+                    <div class="post-form">
+                        <div class="form-group">
+                            <textarea id="postContent" class="post-input" placeholder="What's on your mind? Share updates, ask questions, or post campus events..."></textarea>
+                        </div>
+                        <div class="post-actions">
+                            <div class="post-options">
+                                <button class="post-option"><i class="fas fa-image"></i> Photo</button>
+                                <button class="post-option"><i class="fas fa-video"></i> Video</button>
+                                <button class="post-option"><i class="fas fa-map-marker-alt"></i> Location</button>
+                            </div>
+                            <button id="createPost" class="btn small"><i class="fas fa-paper-plane"></i> Post</button>
+                        </div>
+                    </div>
+                    
+                    <div class="feed-filter">
+                        <button class="filter-btn active" data-filter="all">All Posts</button>
+                        <button class="filter-btn" data-filter="events">Events</button>
+                        <button class="filter-btn" data-filter="questions">Questions</button>
+                        <button class="filter-btn" data-filter="announcements">Announcements</button>
+                    </div>
+                    
+                    <div class="feed-container" id="feedContainer">
+                        <!-- Feed items will be dynamically loaded here -->
+                        <div class="feed-item">
+                            <div class="feed-header">
+                                <div class="feed-user-avatar">A</div>
+                                <div class="feed-user-info">
+                                    <div class="feed-user-name">NUTM Admin</div>
+                                    <div class="feed-time">2 hours ago</div>
+                                </div>
+                            </div>
+                            <div class="feed-content">
+                                <p>🚀 Welcome to the new NUTM Community Feed! Connect with fellow students, share your experiences, and stay updated with campus events. Let's build an amazing community together! #NUTMCommunity</p>
+                            </div>
+                            <div class="feed-actions">
+                                <button class="feed-action"><i class="far fa-heart"></i> 75</button>
+                                <button class="feed-action"><i class="far fa-comment"></i> 35</button>
+                                <button class="feed-action"><i class="far fa-share-square"></i> Share</button>
+                            </div>
+                        </div>
+                        
+                        <div class="feed-item">
+                            <div class="feed-header">
+                                <div class="feed-user-avatar">T</div>
+                                <div class="feed-user-info">
+                                    <div class="feed-user-name">NUTM Mechatrons</div>
+                                    <div class="feed-time">6 hours ago</div>
+                                </div>
+                            </div>
+                            <div class="feed-content">
+                                <p>💻 Join us for our weekly coding class this Friday at 4 PM in the post graduate class! We'll be building a mini-project together. All skill levels welcome! #TechClub #Coding</p>
+                            </div>
+                            <div class="feed-actions">
+                                <button class="feed-action"><i class="far fa-heart"></i> 65</button>
+                                <button class="feed-action"><i class="far fa-comment"></i> 28</button>
+                                <button class="feed-action"><i class="far fa-share-square"></i> Share</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Events Tab -->
+            <div id="eventsTab" class="app-tab">
+                <div class="card">
+                    <h2><i class="fas fa-calendar-alt"></i> Campus Events & Activities</h2>
+                    <p class="muted">Discover upcoming events, workshops, and social activities</p>
+                    
+                    <div class="quick-list">
+                        <div class="quick-item" onclick="showEventDetails('NUTM Mechatrons')">
+                            <i class="fas fa-laptop-code"></i>
+                            <h4>NUTM Mechatrons</h4>
+                            <p>Friday, 4 PM</p>
+                            <div class="category-badge">Workshop</div>
+                        </div>
+                        
+                        <div class="quick-item" onclick="showEventDetails('sports-day')">
+                            <i class="fas fa-running"></i>
+                            <h4>Sports Day</h4>
+                            <p>Saturday, 10 AM</p>
+                            <div class="category-badge">Sports</div>
+                        </div>
+                        
+                        <div class="quick-item" onclick="showEventDetails('The Echoes of NUTM')">
+                            <i class="fas fa-book"></i>
+                            <h4>The Echoes of NUTM</h4>
+                            <p>Friday, 4 PM</p>
+                            <div class="category-badge">Literature</div>
+                        </div>
+                        
+                        <div class="quick-item" onclick="showEventDetails('SimFAni')">
+                            <i class="fas fa-music"></i>
+                            <h4>SimFAni</h4>
+                            <p>Friday, 4 PM</p>
+                            <div class="category-badge">Creative Expression</div>
+                        </div>
+                    </div>
+                    
+                    <div id="eventDetails" class="location-details" style="display: none;">
+                        <h3 id="eventTitle">Event Title</h3>
+                        <p id="eventDescription">Event description will appear here</p>
+                        <p><strong>📅 Date & Time:</strong> <span id="eventDateTime"></span></p>
+                        <p><strong>📍 Location:</strong> <span id="eventLocation"></span></p>
+                        <p><strong>👥 Organizer:</strong> <span id="eventOrganizer"></span></p>
+                        <button class="btn small" style="margin-top: 15px;"><i class="fas fa-calendar-plus"></i> Add to Calendar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="logoutBtn" class="btn danger" style="margin-top: 20px;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </section>
+    </main>
+
+    <!-- Floating Action Button -->
+    <div class="fab" id="helpFab">
+        <i class="fas fa-question"></i>
+    </div>
+
+    <div class="notification" id="notification">
+        <div class="notification-icon" id="notificationIcon"></div>
+        <div id="notificationMessage"></div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc1-CyXprYHCWurmL4lOfJH9k9Aev7OPU",
+            authDomain: "nutm-navigator.firebaseapp.com",
+            projectId: "nutm-navigator",
+            storageBucket: "nutm-navigator.firebasestorage.app",
+            messagingSenderId: "713064182958",
+            appId: "1:713064182958:web:6d5adfc81035992397a93f"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // =============================================
+        // THEME MANAGEMENT
+        // =============================================
+
+        function initializeTheme() {
+            const themeToggle = document.getElementById('themeToggle');
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            
+            // Set initial theme
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.checked = savedTheme === 'light';
+            updateThemeLabels(savedTheme);
+            
+            // Add event listener for theme toggle
+            themeToggle.addEventListener('change', function() {
+                const newTheme = this.checked ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeLabels(newTheme);
+                showNotification(`Switched to ${newTheme} mode`, 'info');
+            });
+        }
+
+        function updateThemeLabels(theme) {
+            const labels = document.querySelectorAll('.theme-label');
+            labels.forEach(label => {
+                if (label.textContent === 'Dark' || label.textContent === 'Light') {
+                    label.textContent = theme === 'light' ? 'Light' : 'Dark';
+                }
+            });
+        }
+
+        // Enhanced location database with 40+ Apapa locations
+        const LOCATIONS = {
+            // 🏥 13 Hospitals & Clinics
+            'Lagoon Hospital': { 
+                coordinates: [6.4489, 3.3654],
+                notes: '8 Marine Road • 8-10 min walk • 24/7 emergency • ₦350 bike',
+                bike_price: 350,
+                type: 'hospital',
+                description: 'Full-service hospital with emergency care and specialist doctors',
+                category: '🏥 Hospital',
+                hours: '24/7',
+                distance: '8-10 min walk'
+            },
+            'Apapa General Hospital': { 
+                coordinates: [6.4475, 3.3648],
+                notes: '12 Creek Road • 7-9 min walk • General healthcare • ₦300 bike',
+                bike_price: 300,
+                type: 'hospital',
+                description: 'Public hospital offering affordable medical services',
+                category: '🏥 Hospital',
+                hours: '7am-10pm',
+                distance: '7-9 min walk'
+            },
+            'Abbey Medical Centre': { 
+                coordinates: [6.4462, 3.3661],
+                notes: '25 Burma Road • 6-8 min walk • Private clinic • ₦550 bike',
+                bike_price: 550,
+                type: 'hospital',
+                description: 'Private medical center with modern facilities',
+                category: '🏥 Hospital',
+                hours: '8am-8pm',
+                distance: '6-8 min walk'
+            },
+            'St. Nicholas Hospital': { 
+                coordinates: [6.4498, 3.3672],
+                notes: 'Lagos Island • 12-15 min walk • Specialist care • ₦800 bike',
+                bike_price: 800,
+                type: 'hospital',
+                description: 'Specialist hospital with advanced medical equipment',
+                category: '🏥 Hospital',
+                hours: '24/7',
+                distance: '12-15 min walk'
+            },
+            'Eko Hospital Apapa': { 
+                coordinates: [6.4458, 3.3639],
+                notes: '15 Wharf Road • 5-7 min walk • Multi-specialty • ₦500 bike',
+                bike_price: 500,
+                type: 'hospital',
+                description: 'Multi-specialty hospital with experienced doctors',
+                category: '🏥 Hospital',
+                hours: '24/7',
+                distance: '5-7 min walk'
+            },
+
+            // 🏨 10 Hotels & Lodges
+            'Rock View Hotel': { 
+                coordinates: [6.4436, 3.3665],
+                notes: '17B Park Lane • 5-7 min walk • 4-star hotel • ₦500 bike',
+                bike_price: 500,
+                type: 'hotel',
+                description: 'Comfortable 4-star hotel with modern amenities near campus',
+                category: '🏨 Hotel',
+                hours: '24/7',
+                distance: '5-7 min walk'
+            },
+            'Karma Suites Apapa': { 
+                coordinates: [6.4428, 3.3671],
+                notes: '12 Wharf Road • 4-6 min walk • Luxury suites • ₦400 bike',
+                bike_price: 400,
+                type: 'hotel',
+                description: 'Luxury hotel suites with premium services',
+                category: '🏨 Hotel',
+                hours: '24/7',
+                distance: '4-6 min walk'
+            },
+            'Carliza Hotel': { 
+                coordinates: [6.4442, 3.3658],
+                notes: '25 Creek Road • 5-7 min walk • Business hotel • ₦240 bike',
+                bike_price: 240,
+                type: 'hotel',
+                description: 'Business-class hotel with conference facilities',
+                category: '🏨 Hotel',
+                hours: '24/7',
+                distance: '5-7 min walk'
+            },
+            'Beni Gold Hotel': { 
+                coordinates: [6.4431, 3.3649],
+                notes: '18 Burma Road • 4-6 min walk • Affordable lodging • ₦220 bike',
+                bike_price: 220,
+                type: 'hotel',
+                description: 'Affordable hotel with comfortable rooms',
+                category: '🏨 Hotel',
+                hours: '24/7',
+                distance: '4-6 min walk'
+            },
+            'Apapa Guest Inn': { 
+                coordinates: [6.4455, 3.3679],
+                notes: '8 Park Lane • 6-8 min walk • Budget accommodation • ₦700 bike',
+                bike_price: 700,
+                type: 'hotel',
+                description: 'Budget-friendly guest house for short stays',
+                category: '🏨 Hotel',
+                hours: '24/7',
+                distance: '6-8 min walk'
+            },
+
+            // 🛍️ 6 Supermarkets & Malls
+            'Apapa Mall': { 
+                coordinates: [6.4438, 3.3672],
+                notes: 'Shopping mall • 4-6 min walk • Multiple stores • ₦400 bike',
+                bike_price: 400,
+                type: 'shopping',
+                description: 'Shopping center with various stores and food court',
+                category: '🛍️ Shopping',
+                hours: '8am-10pm',
+                distance: '4-6 min walk'
+            },
+            'Maxim Supermarket': { 
+                coordinates: [6.4445, 3.3668],
+                notes: 'Groceries • 5-7 min walk • Fresh produce • ₦700 bike',
+                bike_price: 700,
+                type: 'shopping',
+                description: 'Supermarket with fresh groceries and household items',
+                category: '🛍️ Shopping',
+                hours: '7am-9pm',
+                distance: '5-7 min walk'
+            },
+            'Kenzo Mart': { 
+                coordinates: [6.4432, 3.3655],
+                notes: 'Department store • 4-6 min walk • Variety goods • ₦500 bike',
+                bike_price: 500,
+                type: 'shopping',
+                description: 'Department store with variety of goods',
+                category: '🛍️ Shopping',
+                hours: '8am-9pm',
+                distance: '4-6 min walk'
+            },
+            'Bokku Mart': { 
+                coordinates: [6.4440, 3.3680],
+                notes: 'Grocery store • 5-7 min walk • Affordable bread & snacks • ₦850 bike',
+                bike_price: 850,
+                type: 'shopping',
+                description: 'Convenience store with fresh bread, snacks, and daily essentials at affordable prices',
+                category: '🛍️ Shopping',
+                hours: '7am-10pm',
+                distance: '5-7 min walk'
+            },
+            'Apapa Market': { 
+                coordinates: [6.4459, 3.3675],
+                notes: 'Local market • 6-8 min walk • Fresh food • ₦50 bike',
+                bike_price: 50,
+                type: 'shopping',
+                description: 'Traditional market with fresh food and local products',
+                category: '🛍️ Shopping',
+                hours: '6am-8pm',
+                distance: '6-8 min walk'
+            },
+
+            // 🍽️ 8 Restaurants & Food Spots
+            'The Place Restaurant': { 
+                coordinates: [6.4443, 3.3676],
+                notes: 'Grill & bar • 5-7 min walk • African cuisine • ₦500 bike',
+                bike_price: 500,
+                type: 'restaurant',
+                description: 'Popular restaurant serving African and continental dishes',
+                category: '🍽️ Restaurant',
+                hours: '7am-11pm',
+                distance: '5-7 min walk'
+            },
+            'So Fresh Apapa': { 
+                coordinates: [6.4437, 3.3662],
+                notes: 'Healthy food • 4-6 min walk • Salads & smoothies • ₦350 bike',
+                bike_price: 350,
+                type: 'restaurant',
+                description: 'Healthy food outlet with salads and smoothies',
+                category: '🍽️ Restaurant',
+                hours: '7am-9pm',
+                distance: '4-6 min walk'
+            },
+            'Genesis Restaurant': { 
+                coordinates: [6.4452, 3.3659],
+                notes: 'Chinese cuisine • 5-7 min walk • Asian food • ₦300 bike',
+                bike_price: 300,
+                type: 'restaurant',
+                description: 'Chinese restaurant with authentic Asian cuisine',
+                category: '🍽️ Restaurant',
+                hours: '10am-10pm',
+                distance: '5-7 min walk'
+            },
+            'Mr Bigg\'s Apapa': { 
+                coordinates: [6.4448, 3.3671],
+                notes: 'Fast food • 5-7 min walk • Quick meals • ₦400 bike',
+                bike_price: 400,
+                type: 'restaurant',
+                description: 'Popular fast food chain with quick meals',
+                category: '🍽️ Restaurant',
+                hours: '7am-10pm',
+                distance: '5-7 min walk'
+            },
+            'NUTM Cafeteria': { 
+                coordinates: [6.4450, 3.3700],
+                notes: 'Campus dining • 2-3 min walk • Student meals • ₦0 bike',
+                bike_price: 0,
+                type: 'restaurant',
+                description: 'Campus cafeteria serving affordable meals for students',
+                category: '🍽️ Restaurant',
+                hours: '8am-8pm',
+                distance: '2-3 min walk'
+            },
+
+            // 🎉 4 Event Centres & Lounges
+            'Apapa Amusement Park': { 
+                coordinates: [6.4465, 3.3688],
+                notes: 'Entertainment • 7-9 min walk • Rides & games • ₦400 bike',
+                bike_price: 400,
+                type: 'event',
+                description: 'Amusement park with rides and entertainment',
+                category: '🎉 Event Center',
+                hours: '10am-10pm',
+                distance: '7-9 min walk'
+            },
+            'Posh Palace Events': { 
+                coordinates: [6.4457, 3.3692],
+                notes: 'Event venue • 7-9 min walk • Weddings & parties • ₦240 bike',
+                bike_price: 240,
+                type: 'event',
+                description: 'Luxury event venue for weddings and parties',
+                category: '🎉 Event Center',
+                hours: '8am-12am',
+                distance: '7-9 min walk'
+            },
+            'Harbour View Lounge': { 
+                coordinates: [6.4472, 3.3695],
+                notes: 'Waterfront lounge • 8-10 min walk • Drinks & music • ₦260 bike',
+                bike_price: 260,
+                type: 'event',
+                description: 'Waterfront lounge with drinks and music',
+                category: '🎉 Event Center',
+                hours: '4pm-2am',
+                distance: '8-10 min walk'
+            },
+            'Club Apapa': { 
+                coordinates: [6.4447, 3.3689],
+                notes: 'Night club • 6-8 min walk • Nightlife • ₦400 bike',
+                bike_price: 400,
+                type: 'event',
+                description: 'Night club with vibrant nightlife',
+                category: '🎉 Event Center',
+                hours: '8pm-4am',
+                distance: '6-8 min walk'
+            },
+
+            // ⛽ 5 Essential Services
+            'Mobil Filling Station': { 
+                coordinates: [6.4433, 3.3645],
+                notes: 'Fuel station • 4-6 min walk • Petrol & diesel • ₦180 bike',
+                bike_price: 180,
+                type: 'essential',
+                description: 'Fuel station with petrol and diesel',
+                category: '⛽ Essential',
+                hours: '24/7',
+                distance: '4-6 min walk'
+            },
+            'Apapa Post Office': { 
+                coordinates: [6.4450, 3.3650],
+                notes: 'Postal services • 5-7 min walk • Mail & packages • ₦190 bike',
+                bike_price: 190,
+                type: 'essential',
+                description: 'Main post office for mail and package services',
+                category: '⛽ Essential',
+                hours: '8am-5pm',
+                distance: '5-7 min walk'
+            },
+            'GTBank Apapa': { 
+                coordinates: [6.4444, 3.3663],
+                notes: 'Banking • 5-7 min walk • ATM & services • ₦170 bike',
+                bike_price: 170,
+                type: 'essential',
+                description: 'Bank with ATM and banking services',
+                category: '⛽ Essential',
+                hours: '8am-4pm',
+                distance: '5-7 min walk'
+            },
+            'Apapa Police Station': { 
+                coordinates: [6.4460, 3.3647],
+                notes: 'Security • 6-8 min walk • Emergency services • ₦200 bike',
+                bike_price: 200,
+                type: 'essential',
+                description: 'Police station for security and emergency services',
+                category: '⛽ Essential',
+                hours: '24/7',
+                distance: '6-8 min walk'
+            },
+            'Apapa Fire Station': { 
+                coordinates: [6.4453, 3.3638],
+                notes: 'Emergency • 5-7 min walk • Fire services • ₦190 bike',
+                bike_price: 190,
+                type: 'essential',
+                description: 'Fire station for emergency fire services',
+                category: '⛽ Essential',
+                hours: '24/7',
+                distance: '5-7 min walk'
+            }
+        };
+
+        // Campus Events Database
+        const CAMPUS_EVENTS = {
+            'NUTM Mechatrons': {
+                title: 'Learn, Build, Earn: Unlocking Opportunities with AI & Robotics',
+                description: 'MechVerse is a student-led tech club focused on Artificial Intelligence, Robotics, and Automation.',
+                dateTime: 'Friday, 4:00 PM - 6:00 PM',
+                location: 'Computer Lab 3, NUTM Campus',
+                organizer: 'Nutm Mechatrons',
+                category: 'technology'
+            },
+            'sports-day': {
+                title: 'Annual Sports Day',
+                description: 'Get ready for our annual sports day featuring football, basketball, track events, and more! Open to all students. Prizes for winners and lots of fun activities. Team registrations open until Thursday.',
+                dateTime: 'Saturday, 9:00 AM - 4:00 PM',
+                location: 'NUTM Sports Complex',
+                organizer: 'Sports Committee',
+                category: 'sports'
+            },
+            'The Echoes of NUTM': {
+                title: 'The Echoes of NUTM Press & Book Club',
+                description: 'A creative club focused on reading, writing, storytelling, and student journalism. Members explore books, share ideas and work on literary projects together.',
+                dateTime: 'Friday, 5:00 PM - 6:00 PM',
+                location: 'Main Auditorium',
+                organizer: 'The Echoes of NUTM Team',
+                category: 'Communication & Expression'
+            },
+            'SimFAni': {
+                title: 'The Artistic Minds Club',
+                description: 'SimFAni is a student-led creative club that brings together students who are passionate about art, music, writing, animation, acting, and storytelling. The club serves as a safe, expressive space where creativity meets collaboration.',
+                dateTime: 'Friday, 5:00 PM - 6:00 PM',
+                location: 'Main Auditorium',
+                organizer: 'Artistic Minds Society',
+                category: 'Creative Arts & Expression'
+            }
+        };
+
+        let map;
+        let userData = null;
+        let currentRoute = null;
+        let userMarker = null;
+        let currentTab = 'navigationTab';
+        let aiSearchResults = [];
+
+        // =============================================
+        // CORE FUNCTIONS
+        // =============================================
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notificationMessage');
+            const iconEl = document.getElementById('notificationIcon');
+            
+            // Set icon based on type
+            const icons = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            };
+            
+            iconEl.textContent = icons[type] || 'ℹ️';
+            messageEl.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function initializeMap() {
+            map = L.map('liveMap').setView([6.4452, 3.3700], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add NUTM marker
+            L.marker([6.4452, 3.3700])
+                .addTo(map)
+                .bindPopup('<b>NUTM Campus</b><br>Your starting point')
+                .openPopup();
+                
+            // Populate location suggestions
+            const datalist = document.getElementById('locationSuggestions');
+            Object.keys(LOCATIONS).forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                datalist.appendChild(option);
+            });
+        }
+
+        function showRouteOnMap(destinationCoords, destinationName) {
+            // Clear existing layers except base map
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Add NUTM marker
+            L.marker([6.4452, 3.3700])
+                .addTo(map)
+                .bindPopup('<b>NUTM Campus</b><br>Your starting point');
+
+            // Add destination marker
+            L.marker(destinationCoords)
+                .addTo(map)
+                .bindPopup(`<b>${destinationName}</b>`)
+                .openPopup();
+
+            // Create route line
+            currentRoute = L.polyline([[6.4452, 3.3700], destinationCoords], {
+                color: '#8b5cf6',
+                weight: 6,
+                opacity: 0.8
+            }).addTo(map);
+
+            // Fit bounds to show both points
+            const bounds = L.latLngBounds([[6.4452, 3.3700], destinationCoords]);
+            map.fitBounds(bounds, { padding: [20, 20] });
+        }
+
+        function loadQuickList() {
+            const cont = document.getElementById('quickList');
+            cont.innerHTML = '';
+            
+            // Get only 5 closest locations (sorted by distance)
+            const locations = Object.keys(LOCATIONS);
+            const closestLocations = locations
+                .sort((a, b) => {
+                    // Simple distance calculation based on coordinates
+                    const distA = Math.abs(LOCATIONS[a].coordinates[0] - 6.4452) + Math.abs(LOCATIONS[a].coordinates[1] - 3.3700);
+                    const distB = Math.abs(LOCATIONS[b].coordinates[0] - 6.4452) + Math.abs(LOCATIONS[b].coordinates[1] - 3.3700);
+                    return distA - distB;
+                })
+                .slice(0, 5);
+            
+            // Create location items for the 5 closest locations
+            closestLocations.forEach(location => {
+                const el = document.createElement('div');
+                el.className = 'quick-item';
+                el.innerHTML = `
+                    <i class="fas fa-${getLocationIcon(LOCATIONS[location].type)}"></i>
+                    <h4>${location}</h4>
+                    <p>${LOCATIONS[location].distance}</p>
+                    ${LOCATIONS[location].bike_price ? `<small>₦${LOCATIONS[location].bike_price} by bike</small>` : ''}
+                    <div class="category-badge">${LOCATIONS[location].category}</div>
+                `;
+                el.onclick = () => {
+                    document.getElementById('destinationSearch').value = location;
+                    calculateAndShowRoute(location);
+                };
+                cont.appendChild(el);
+            });
+        }
+        
+        function getLocationIcon(type) {
+            const icons = {
+                'hospital': 'hospital',
+                'hotel': 'bed',
+                'shopping': 'shopping-bag',
+                'restaurant': 'utensils',
+                'event': 'glass-cheers',
+                'essential': 'gas-pump'
+            };
+            return icons[type] || 'map-marker-alt';
+        }
+
+        function calculateAndShowRoute(destName) {
+            const dest = LOCATIONS[destName];
+            if (!dest) {
+                showNotification('Location not found!', 'error');
+                return;
+            }
+            
+            showRouteOnMap(dest.coordinates, destName);
+            displayRouteDetails(destName, dest);
+            showLocationDetails(destName, dest);
+            showNotification(`📍 Route to ${destName} displayed!`, 'success');
+            
+            // Log route request to Firestore
+            if (userData) {
+                db.collection('routeRequests').add({
+                    userId: userData.uid,
+                    userName: userData.name,
+                    destination: destName,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }
+        
+        function showLocationDetails(destName, dest) {
+            const detailsEl = document.getElementById('locationDetails');
+            detailsEl.innerHTML = `
+                <h4>${destName}</h4>
+                <p>${dest.description}</p>
+                <p><strong>🕒 Hours:</strong> ${dest.hours}</p>
+                <div class="route-info">
+                    <div class="route-option">
+                        <i class="fas fa-walking"></i>
+                        <span>${dest.distance}</span>
+                    </div>
+                    <div class="route-option">
+                        <i class="fas fa-bicycle"></i>
+                        <span>₦${dest.bike_price || 0}</span>
+                    </div>
+                    <div class="route-option">
+                        <i class="fas fa-car"></i>
+                        <span>₦${(dest.bike_price * 2) || 0}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayRouteDetails(destName, dest) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('routeTitle').textContent = `Route to ${destName}`;
+            
+            document.getElementById('routeSteps').innerHTML = `
+                <div style="margin: 15px 0; padding: 15px; background: rgba(6, 214, 160, 0.1); border-radius: 10px; border-left: 4px solid var(--accent);">
+                    <strong>📍 Directions:</strong><br>
+                    ${dest.notes}
+                </div>
+                <p><strong>🚶 Walking:</strong> ${dest.distance}</p>
+                <p><strong>🚲 Bike:</strong> ₦${dest.bike_price} (2-5 minutes)</p>
+                <p><strong>🚗 Car:</strong> ₦${dest.bike_price * 2} (1-3 minutes)</p>
+            `;
+        }
+
+        function addChatMessage(who, text) {
+            const box = document.getElementById('chatBox');
+            const d = document.createElement('div');
+            d.className = 'msg ' + (who === 'bot' ? 'bot' : 'user');
+            d.textContent = text;
+            box.appendChild(d);
+            box.scrollTop = box.scrollHeight;
+        }
+        
+        // Enhanced AI with intelligent location search
+        async function getAIResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            
+            // Enhanced keyword detection for specific food items
+            if (lowerMessage.includes('bread') || lowerMessage.includes('snack') || lowerMessage.includes('cheap') || lowerMessage.includes('affordable')) {
+                return "🍞 For fresh and affordable bread, I recommend Bokku Mart! They have the best prices on bread and snacks near campus. It's just a 5-7 minute walk from NUTM. Would you like directions to Bokku Mart?";
+            }
+            
+            if (lowerMessage.includes('food') || lowerMessage.includes('meal') || lowerMessage.includes('hungry') || lowerMessage.includes('eat') || lowerMessage.includes('lunch') || lowerMessage.includes('dinner')) {
+                return "🍽️ For meals, you have several options:\n• NUTM Cafeteria (on campus, most affordable)\n• The Place Restaurant (African cuisine, 5-7 min walk)\n• So Fresh (healthy options, 4-6 min walk)\n• Genesis Restaurant (Chinese food, 5-7 min walk)\n\nWhere would you like to eat?";
+            }
+            
+            // Social activities and events
+            if (lowerMessage.includes('event') || lowerMessage.includes('activity') || lowerMessage.includes('fun') || lowerMessage.includes('social') || lowerMessage.includes('party')) {
+                return "🎉 Check out the Events tab for upcoming campus activities! We have:\n• Tech workshops every Friday\n• Sports day this Saturday\n• Career fair next Monday\n• Cultural festival next Friday\n\nYou can also visit Apapa Amusement Park or Club Apapa for off-campus entertainment!";
+            }
+            
+            // Location search queries
+            if (lowerMessage.includes('hospital') || lowerMessage.includes('clinic') || lowerMessage.includes('doctor') || lowerMessage.includes('medical')) {
+                const hospitals = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'hospital');
+                showAISearchResults(hospitals, '🏥 Medical Facilities');
+                return "🏥 I found several hospitals and clinics near you. Check the search results above and select one to get directions!";
+            }
+            
+            if (lowerMessage.includes('hotel') || lowerMessage.includes('lodg') || lowerMessage.includes('stay') || lowerMessage.includes('accommodation')) {
+                const hotels = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'hotel');
+                showAISearchResults(hotels, '🏨 Hotels & Accommodation');
+                return "🏨 I found several hotels and accommodation options. Check the search results above and select one to get directions!";
+            }
+            
+            if (lowerMessage.includes('shop') || lowerMessage.includes('mall') || lowerMessage.includes('buy') || lowerMessage.includes('store') || lowerMessage.includes('market')) {
+                const shopping = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'shopping');
+                showAISearchResults(shopping, '🛍️ Shopping & Markets');
+                return "🛍️ I found several shopping centers and markets. Check the search results above and select one to get directions!";
+            }
+            
+            if (lowerMessage.includes('restaurant') || lowerMessage.includes('food') || lowerMessage.includes('eat') || lowerMessage.includes('dining')) {
+                const restaurants = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'restaurant');
+                showAISearchResults(restaurants, '🍽️ Restaurants & Food');
+                return "🍽️ I found several restaurants and food spots. Check the search results above and select one to get directions!";
+            }
+            
+            if (lowerMessage.includes('fuel') || lowerMessage.includes('petrol') || lowerMessage.includes('gas') || lowerMessage.includes('station') || lowerMessage.includes('essential')) {
+                const essentials = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'essential');
+                showAISearchResults(essentials, '⛽ Essential Services');
+                return "⛽ I found several essential services. Check the search results above and select one to get directions!";
+            }
+            
+            if (lowerMessage.includes('event') || lowerMessage.includes('entertainment') || lowerMessage.includes('fun')) {
+                const events = Object.keys(LOCATIONS).filter(key => LOCATIONS[key].type === 'event');
+                showAISearchResults(events, '🎉 Entertainment & Events');
+                return "🎉 I found several entertainment venues and event centers. Check the search results above and select one to get directions!";
+            }
+            
+            // Enhanced AI responses with category detection
+            if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+                return `Hello ${userData.name}! 👋 I'm your NUTM AI assistant. I can help you with:\n• Finding locations 🗺️\n• Campus events & activities 🎉\n• Food recommendations 🍽️\n• Community connections 👥\n\nHow can I assist you today?`;
+            }
+            
+            if (lowerMessage.includes('route') || lowerMessage.includes('direction') || lowerMessage.includes('navigate') || lowerMessage.includes('how to get')) {
+                return "🗺️ I can help you find routes to various locations around Apapa. Just tell me what type of place you're looking for, or use the search function above!";
+            }
+            
+            if (lowerMessage.includes('thank') || lowerMessage.includes('thanks')) {
+                return "You're welcome! 😊 Is there anything else I can help you with today?";
+            }
+            
+            if (lowerMessage.includes('community') || lowerMessage.includes('friend') || lowerMessage.includes('connect') || lowerMessage.includes('social')) {
+                return "👥 Check out the Community tab to connect with other students! You can share updates, ask questions, and join campus discussions. It's a great way to meet people with similar interests!";
+            }
+            
+            // Default response
+            const responses = [
+                "I understand! I can help you find locations, events, food spots, or connect you with campus community.",
+                "That's a great question! I specialize in helping students navigate campus life and Apapa area.",
+                "I'd love to help you explore NUTM and Apapa! Try asking about specific locations, events, or campus activities.",
+                "For detailed information about that, you might want to check the specific tabs or ask in the community feed!",
+                "I can help you find the best routes, events, and connections around campus. Just tell me what you need!"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+        
+        function showAISearchResults(locationNames, category) {
+            const aiResults = document.getElementById('aiResults');
+            aiResults.style.display = 'block';
+            aiResults.innerHTML = `<div class="search-status">${category} - Select a location to get directions</div>`;
+            
+            aiSearchResults = locationNames;
+            
+            locationNames.forEach(location => {
+                const loc = LOCATIONS[location];
+                const resultItem = document.createElement('div');
+                resultItem.className = 'ai-result-item';
+                resultItem.innerHTML = `
+                    <div class="ai-result-name">${location}</div>
+                    <div class="ai-result-details">${loc.description} • ${loc.distance} • ₦${loc.bike_price} by bike</div>
+                `;
+                resultItem.onclick = () => {
+                    // Remove selected class from all items
+                    document.querySelectorAll('.ai-result-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    // Add selected class to clicked item
+                    resultItem.classList.add('selected');
+                    // Set the search input value
+                    document.getElementById('destinationSearch').value = location;
+                    // Automatically calculate and show route after a brief delay
+                    setTimeout(() => {
+                        calculateAndShowRoute(location);
+                    }, 500);
+                };
+                aiResults.appendChild(resultItem);
+            });
+        }
+        
+        function locateUser() {
+            if (!navigator.geolocation) {
+                showNotification('Geolocation is not supported by your browser', 'error');
+                return;
+            }
+            
+            showNotification('📍 Locating you...', 'info');
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    
+                    // Remove existing user marker
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                    }
+                    
+                    // Add user marker
+                    userMarker = L.marker([userLat, userLng])
+                        .addTo(map)
+                        .bindPopup('You are here!')
+                        .openPopup();
+                    
+                    // Center map on user
+                    map.setView([userLat, userLng], 16);
+                    
+                    showNotification('✅ Your location has been added to the map!', 'success');
+                },
+                (error) => {
+                    showNotification('❌ Unable to retrieve your location: ' + error.message, 'error');
+                }
+            );
+        }
+        
+        function showAdminPanel() {
+            const adminPanel = document.getElementById('adminPanel');
+            adminPanel.style.display = 'block';
+            
+            // Load admin stats
+            loadAdminStats();
+        }
+        
+        function loadAdminStats() {
+            // Get user count
+            db.collection('users').get().then(snapshot => {
+                document.getElementById('totalUsers').textContent = snapshot.size;
+            });
+            
+            // Get today's active users (simplified)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            db.collection('routeRequests')
+                .where('timestamp', '>=', today)
+                .get()
+                .then(snapshot => {
+                    const uniqueUsers = new Set();
+                    snapshot.forEach(doc => {
+                        uniqueUsers.add(doc.data().userId);
+                    });
+                    document.getElementById('activeToday').textContent = uniqueUsers.size;
+                });
+                
+            // Location count
+            document.getElementById('locationsCount').textContent = Object.keys(LOCATIONS).length;
+            
+            // Show stats grid
+            document.getElementById('statsGrid').style.display = 'grid';
+        }
+        
+        function showEventDetails(eventId) {
+            const event = CAMPUS_EVENTS[eventId];
+            if (!event) return;
+            
+            const detailsEl = document.getElementById('eventDetails');
+            document.getElementById('eventTitle').textContent = event.title;
+            document.getElementById('eventDescription').textContent = event.description;
+            document.getElementById('eventDateTime').textContent = event.dateTime;
+            document.getElementById('eventLocation').textContent = event.location;
+            document.getElementById('eventOrganizer').textContent = event.organizer;
+            
+            detailsEl.style.display = 'block';
+        }
+        
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.app-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update navigation tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tab === tabId) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            currentTab = tabId;
+        }
+        
+        function createPost() {
+            const postContent = document.getElementById('postContent').value.trim();
+            if (!postContent) {
+                showNotification('Please enter some content for your post', 'warning');
+                return;
+            }
+            
+            if (!userData) {
+                showNotification('You need to be logged in to create posts', 'error');
+                return;
+            }
+            
+            // Create post object
+            const post = {
+                content: postContent,
+                userId: userData.uid,
+                userName: userData.name,
+                userDept: userData.department,
+                timestamp: new Date(),
+                likes: 0,
+                comments: [],
+                type: 'post'
+            };
+            
+            // Add to Firestore
+            db.collection('communityPosts').add(post)
+                .then(() => {
+                    showNotification('Post published successfully!', 'success');
+                    document.getElementById('postContent').value = '';
+                    loadCommunityFeed();
+                })
+                .catch(error => {
+                    showNotification('Error publishing post: ' + error.message, 'error');
+                });
+        }
+        
+        function loadCommunityFeed() {
+            const feedContainer = document.getElementById('feedContainer');
+            
+            // Clear existing feed items (except sample ones)
+            const sampleItems = feedContainer.querySelectorAll('.feed-item');
+            if (sampleItems.length > 2) {
+                for (let i = 2; i < sampleItems.length; i++) {
+                    sampleItems[i].remove();
+                }
+            }
+            
+            // Load posts from Firestore
+            db.collection('communityPosts')
+                .orderBy('timestamp', 'desc')
+                .limit(10)
+                .get()
+                .then(snapshot => {
+                    snapshot.forEach(doc => {
+                        const post = doc.data();
+                        const postElement = createPostElement(post);
+                        feedContainer.appendChild(postElement);
+                    });
+                })
+                .catch(error => {
+                    console.log('Error loading posts:', error);
+                });
+        }
+        
+        function createPostElement(post) {
+            const postEl = document.createElement('div');
+            postEl.className = 'feed-item';
+            
+            const timeAgo = getTimeAgo(post.timestamp);
+            const userInitial = post.userName ? post.userName.charAt(0) : 'U';
+            
+            postEl.innerHTML = `
+                <div class="feed-header">
+                    <div class="feed-user-avatar">${userInitial}</div>
+                    <div class="feed-user-info">
+                        <div class="feed-user-name">${post.userName || 'Anonymous'}</div>
+                        <div class="feed-time">${timeAgo}</div>
+                    </div>
+                </div>
+                <div class="feed-content">
+                    <p>${post.content}</p>
+                </div>
+                <div class="feed-actions">
+                    <button class="feed-action"><i class="far fa-heart"></i> ${post.likes || 0}</button>
+                    <button class="feed-action"><i class="far fa-comment"></i> ${post.comments ? post.comments.length : 0}</button>
+                    <button class="feed-action"><i class="far fa-share-square"></i> Share</button>
+                </div>
+            `;
+            
+            return postEl;
+        }
+        
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const postTime = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const diffMs = now - postTime;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hr ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return postTime.toLocaleDateString();
+        }
+
+        // =============================================
+        // PASSWORD MANAGEMENT FUNCTIONS
+        // =============================================
+
+        function showPasswordResetModal() {
+            document.getElementById('passwordResetModal').classList.add('active');
+        }
+
+        function hidePasswordResetModal() {
+            document.getElementById('passwordResetModal').classList.remove('active');
+        }
+
+        function showChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('active');
+        }
+
+        function hideChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('active');
+        }
+
+        async function sendPasswordResetEmail(email) {
+            try {
+                await auth.sendPasswordResetEmail(email);
+                showNotification('✅ Password reset email sent! Check your inbox.', 'success');
+                hidePasswordResetModal();
+                return true;
+            } catch (error) {
+                let errorMessage = 'Failed to send reset email. ';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage += 'No account found with this email.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'The email address is invalid.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                showNotification('❌ ' + errorMessage, 'error');
+                return false;
+            }
+        }
+
+        async function changePassword(currentPassword, newPassword, confirmPassword) {
+            if (newPassword !== confirmPassword) {
+                showNotification('❌ New passwords do not match!', 'error');
+                return false;
+            }
+
+            if (newPassword.length < 6) {
+                showNotification('❌ Password must be at least 6 characters long!', 'error');
+                return false;
+            }
+
+            try {
+                const user = auth.currentUser;
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+                
+                // Reauthenticate user
+                await user.reauthenticateWithCredential(credential);
+                
+                // Update password
+                await user.updatePassword(newPassword);
+                
+                showNotification('✅ Password changed successfully!', 'success');
+                hideChangePasswordModal();
+                return true;
+            } catch (error) {
+                let errorMessage = 'Failed to change password. ';
+                switch (error.code) {
+                    case 'auth/wrong-password':
+                        errorMessage += 'Current password is incorrect.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += 'New password is too weak.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                showNotification('❌ ' + errorMessage, 'error');
+                return false;
+            }
+        }
+
+        // =============================================
+        // ANONYMOUS AUTHENTICATION
+        // =============================================
+
+        async function signInAnonymously() {
+            try {
+                showNotification('🔄 Signing in as guest...', 'info');
+                
+                const userCredential = await auth.signInAnonymously();
+                const user = userCredential.user;
+                
+                // Create anonymous user data
+                userData = {
+                    uid: user.uid,
+                    name: 'Guest User',
+                    email: null,
+                    department: 'Guest',
+                    isAdmin: false,
+                    isAnonymous: true
+                };
+                
+                // Store anonymous user in Firestore
+                await db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    name: 'Guest User',
+                    email: null,
+                    department: 'Guest',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    isAdmin: false,
+                    isAnonymous: true
+                });
+                
+                showNotification('🎉 Welcome! You are now signed in as a guest.', 'success');
+                showApp();
+                return true;
+            } catch (error) {
+                showNotification('❌ Failed to sign in anonymously: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // =============================================
+        // ADMIN AUTHENTICATION FIX
+        // =============================================
+
+        async function initializeAdminAccount() {
+            const adminEmail = "admin@nutm.edu.ng";
+            const adminPassword = "admin123456";
+            
+            try {
+                // Try to sign in as admin
+                const userCredential = await auth.signInWithEmailAndPassword(adminEmail, adminPassword);
+                console.log("✅ Admin login successful");
+                return true;
+            } catch (error) {
+                if (error.code === 'auth/user-not-found') {
+                    // Admin doesn't exist, create one
+                    try {
+                        console.log("🔄 Creating admin account...");
+                        const userCredential = await auth.createUserWithEmailAndPassword(adminEmail, adminPassword);
+                        const user = userCredential.user;
+                        
+                        // Create admin user in Firestore
+                        await db.collection('users').doc(user.uid).set({
+                            uid: user.uid,
+                            name: "NUTM Administrator",
+                            email: adminEmail,
+                            department: "Administration",
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            isAdmin: true
+                        });
+                        
+                        console.log("✅ Admin account created successfully");
+                        return true;
+                    } catch (createError) {
+                        console.error("❌ Failed to create admin account:", createError);
+                        return false;
+                    }
+                } else if (error.code === 'auth/wrong-password') {
+                    console.log("❌ Admin password is incorrect");
+                    return false;
+                } else {
+                    console.error("❌ Admin login error:", error);
+                    return false;
+                }
+            }
+        }
+
+        // =============================================
+        // AUTHENTICATION FUNCTIONS
+        // =============================================
+
+        async function registerUser(name, email, dept, password) {
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                await db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    name: name,
+                    email: email,
+                    department: dept,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    isAdmin: email === 'admin@nutm.edu.ng'
+                });
+                
+                return { ok: true, user: user };
+            } catch (error) {
+                let errorMessage = 'Registration failed. ';
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage += 'This email is already registered.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'The email address is invalid.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += 'The password is too weak.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                return { ok: false, error: errorMessage };
+            }
+        }
+
+        async function loginUser(email, password) {
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Get user data using the UID
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    userData = { id: userDoc.id, ...userDoc.data() };
+                    return { ok: true, user: userData };
+                } else {
+                    // If user document doesn't exist but authentication succeeded, create one
+                    if (email === 'admin@nutm.edu.ng') {
+                        userData = {
+                            uid: user.uid,
+                            name: "NUTM Administrator",
+                            email: email,
+                            department: "Administration",
+                            isAdmin: true
+                        };
+                        
+                        await db.collection('users').doc(user.uid).set({
+                            uid: user.uid,
+                            name: "NUTM Administrator",
+                            email: email,
+                            department: "Administration",
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            isAdmin: true
+                        });
+                        
+                        return { ok: true, user: userData };
+                    } else {
+                        return { ok: false, error: 'User data not found in database' };
+                    }
+                }
+            } catch (error) {
+                let errorMessage = 'Login failed. ';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage += 'No account found with this email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage += 'Incorrect password.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += 'The email address is invalid.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                return { ok: false, error: errorMessage };
+            }
+        }
+
+        function showApp() {
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('appPanel').style.display = 'block';
+            document.getElementById('navTabs').style.display = 'flex';
+            
+            // Customize user area based on authentication type
+            if (userData.isAnonymous) {
+                document.getElementById('userArea').innerHTML = `
+                    <div class="user-profile">
+                        <div class="profile-pic">G</div>
+                        <div class="user-badge">
+                            <i class="fas fa-user-secret"></i>
+                            Guest User • Limited Access
+                        </div>
+                    </div>
+                `;
+                
+                // Show limited features for anonymous users
+                document.getElementById('createPost').style.display = 'none';
+                document.getElementById('postContent').placeholder = 'Sign up to create posts and access all features';
+                document.getElementById('changePasswordBtn').style.display = 'none';
+                
+                addChatMessage('bot', `👋 Welcome Guest! You're exploring NUTM Navigator in limited mode.\n\nAs a guest, you can:\n• Search for locations 🗺️\n• View maps and routes 🗺️\n• Chat with AI assistant 🤖\n• Browse community feed 👥\n\n💡 Sign up for full access to:\n• Create posts and interact\n• Save favorite locations\n• Access all premium features`);
+            } else {
+                document.getElementById('userArea').innerHTML = `
+                    <div class="user-profile">
+                        <div class="profile-pic">${userData.name.charAt(0)}</div>
+                        <div class="user-badge">
+                            <i class="fas fa-user-circle"></i>
+                            ${userData.name} • ${userData.department}
+                            ${userData.isAdmin ? ' • 👑 Admin' : ''}
+                        </div>
+                    </div>
+                `;
+                
+                addChatMessage('bot', `👋 Welcome ${userData.name}! I'm your NUTM AI assistant. I can help you with:\n• Finding locations 🗺️\n• Campus events & activities 🎉\n• Food recommendations 🍽️\n• Community connections 👥\n\nHow can I assist you today?`);
+            }
+            
+            loadQuickList();
+            loadCommunityFeed();
+            
+            // Show admin panel if user is admin
+            if (userData.isAdmin) {
+                showAdminPanel();
+                showNotification('👑 Welcome Administrator! Admin controls activated.', 'success');
+            }
+        }
+
+        // =============================================
+        // EVENT LISTENERS
+        // =============================================
+
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.tab).classList.add('active');
+                });
+            });
+            
+            // Navigation tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+
+            // Anonymous login buttons
+            document.getElementById('anonymousLoginBtn').addEventListener('click', signInAnonymously);
+            document.getElementById('anonymousLoginBtn2').addEventListener('click', signInAnonymously);
+
+            // Registration form
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('regName').value;
+                const email = document.getElementById('regEmail').value;
+                const dept = document.getElementById('regDept').value;
+                const password = document.getElementById('regPassword').value;
+                
+                const result = await registerUser(name, email, dept, password);
+                if (result.ok) {
+                    showNotification('✅ Account created successfully! Logging you in...', 'success');
+                    
+                    // Auto-login after registration
+                    const loginResult = await loginUser(email, password);
+                    if (loginResult.ok) {
+                        showNotification(`🎉 Welcome to NUTM Navigator Pro, ${loginResult.user.name}!`, 'success');
+                        showApp();
+                    } else {
+                        showNotification('❌ Auto-login failed: ' + loginResult.error, 'error');
+                    }
+                } else {
+                    showNotification('❌ ' + result.error, 'error');
+                }
+            });
+
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const result = await loginUser(email, password);
+                if (result.ok) {
+                    showNotification(`🎉 Welcome back, ${result.user.name}!`, 'success');
+                    showApp();
+                } else {
+                    showNotification('❌ ' + result.error, 'error');
+                }
+            });
+
+            // Password reset form
+            document.getElementById('passwordResetForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('resetEmail').value;
+                await sendPasswordResetEmail(email);
+            });
+
+            // Change password form
+            document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                await changePassword(currentPassword, newPassword, confirmPassword);
+            });
+
+            // Forgot password link
+            document.getElementById('forgotPasswordLink').addEventListener('click', showPasswordResetModal);
+
+            // Change password button
+            document.getElementById('changePasswordBtn').addEventListener('click', showChangePasswordModal);
+
+            // Modal close buttons
+            document.getElementById('closePasswordModal').addEventListener('click', hidePasswordResetModal);
+            document.getElementById('closeChangePasswordModal').addEventListener('click', hideChangePasswordModal);
+
+            // Close modals when clicking outside
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            });
+
+            // Search functionality
+            document.getElementById('searchBtn').addEventListener('click', () => {
+                const query = document.getElementById('destinationSearch').value;
+                if (query) {
+                    calculateAndShowRoute(query);
+                }
+            });
+            
+            // Enter key for search
+            document.getElementById('destinationSearch').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('searchBtn').click();
+                }
+            });
+
+            // Chat functionality
+            document.getElementById('sendChat').addEventListener('click', () => {
+                const text = document.getElementById('chatInput').value;
+                if (text) {
+                    addChatMessage('user', text);
+                    document.getElementById('chatInput').value = '';
+                    
+                    // AI response
+                    setTimeout(async () => {
+                        const response = await getAIResponse(text);
+                        addChatMessage('bot', response);
+                    }, 1000);
+                }
+            });
+
+            // Map controls
+            document.getElementById('satelliteView').addEventListener('click', () => {
+                // Toggle between standard and satellite view
+                if (map.hasLayer(map._layers[Object.keys(map._layers)[1]])) {
+                    // Switch to satellite
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.TileLayer) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    
+                    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenTopoMap contributors'
+                    }).addTo(map);
+                    
+                    showNotification('🗺️ Switched to topographic view', 'info');
+                } else {
+                    // Switch back to standard
+                    map.eachLayer(layer => {
+                        if (layer instanceof L.TileLayer) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors'
+                    }).addTo(map);
+                    
+                    showNotification('🗺️ Switched to standard view', 'info');
+                }
+            });
+
+            document.getElementById('resetView').addEventListener('click', () => {
+                map.setView([6.4452, 3.3700], 15);
+                showNotification('🗺️ Map view reset', 'info');
+            });
+            
+            document.getElementById('locateMe').addEventListener('click', locateUser);
+
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                auth.signOut();
+                showNotification(' Logged out successfully', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            });
+
+            // Enter key for chat
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('sendChat').click();
+                }
+            });
+            
+            // Suggestion tags
+            document.querySelectorAll('.suggestion-tag').forEach(tag => {
+                tag.addEventListener('click', () => {
+                    const categoryText = tag.textContent;
+                    let category = '';
+                    
+                    // Map emoji to category
+                    if (categoryText.includes('🏥')) category = 'hospital';
+                    else if (categoryText.includes('🏨')) category = 'hotel';
+                    else if (categoryText.includes('🛍️')) category = 'shopping';
+                    else if (categoryText.includes('🍽️')) category = 'restaurant';
+                    else if (categoryText.includes('🎉')) category = 'event';
+                    
+                    // Filter and show locations of this type
+                    const filteredLocations = Object.keys(LOCATIONS).filter(key => {
+                        return LOCATIONS[key].type === category;
+                    });
+                    
+                    if (filteredLocations.length > 0) {
+                        showAISearchResults(filteredLocations, categoryText);
+                    } else {
+                        showNotification(`❌ No ${categoryText} locations found in database`, 'error');
+                    }
+                });
+            });
+            
+            // Admin controls
+            document.getElementById('exportData').addEventListener('click', () => {
+                showNotification('📊 Export feature would generate a CSV file in a full implementation', 'info');
+            });
+            
+            document.getElementById('addLocation').addEventListener('click', () => {
+                showNotification('📍 Location addition form would appear here in a full implementation', 'info');
+            });
+            
+            document.getElementById('viewStats').addEventListener('click', () => {
+                document.getElementById('statsGrid').style.display = 
+                    document.getElementById('statsGrid').style.display === 'none' ? 'grid' : 'none';
+            });
+            
+            // Floating Action Button
+            document.getElementById('helpFab').addEventListener('click', () => {
+                addChatMessage('bot', "💡 Need help? Try asking me about:\n• Specific locations 🗺️\n• Food recommendations 🍽️\n• Campus events 🎉\n• Community connections 👥\n• Or use the navigation tabs to explore different features!");
+            });
+            
+            // Community feed
+            document.getElementById('createPost').addEventListener('click', createPost);
+            
+            // Feed filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    // In a full implementation, this would filter the feed
+                    showNotification(`Showing ${btn.dataset.filter} posts`, 'info');
+                });
+            });
+            
+            // Feed action buttons (like, comment, share)
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('.feed-action')) {
+                    const actionBtn = e.target.closest('.feed-action');
+                    const actionType = actionBtn.querySelector('i').className;
+                    
+                    if (actionType.includes('heart')) {
+                        actionBtn.classList.toggle('liked');
+                        const icon = actionBtn.querySelector('i');
+                        if (icon.classList.contains('far')) {
+                            icon.classList.replace('far', 'fas');
+                        } else {
+                            icon.classList.replace('fas', 'far');
+                        }
+                    } else if (actionType.includes('comment')) {
+                        showNotification('💬 Comment feature would open in a full implementation', 'info');
+                    } else if (actionType.includes('share')) {
+                        showNotification('📤 Share feature would open in a full implementation', 'info');
+                    }
+                }
+            });
+        }
+
+        // =============================================
+        // INITIALIZATION
+        // =============================================
+
+        function checkAuthState() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in, get their data
+                    db.collection('users').doc(user.uid).get()
+                        .then(doc => {
+                            if (doc.exists) {
+                                userData = { id: doc.id, ...doc.data() };
+                                showApp();
+                            } else {
+                                // Handle anonymous users
+                                if (user.isAnonymous) {
+                                    userData = {
+                                        uid: user.uid,
+                                        name: 'Guest User',
+                                        email: null,
+                                        department: 'Guest',
+                                        isAdmin: false,
+                                        isAnonymous: true
+                                    };
+                                    showApp();
+                                }
+                            }
+                        });
+                }
+            });
+        }
+
+        function initializeApp() {
+            // Hide loading screen after 2 seconds
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }, 2000);
+            
+            initializeTheme();
+            initializeMap();
+            setupEventListeners();
+            checkAuthState();
+            
+            // Initialize admin account on app start
+            initializeAdminAccount().then(success => {
+                if (success) {
+                    console.log("✅ Admin account ready");
+                } else {
+                    console.log("❌ Admin account setup failed");
+                }
+            });
+            
+            showNotification('🚀 NUTM Navigator Pro loaded successfully!', 'success');
+        }
+
+        // Start the app when page loads
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
